@@ -65,7 +65,7 @@ func work_type_to_name(work workType) string {
 	case gather_wood:
 		return "wood gathering"
 	case gather_stone:
-		return "stoine gathering"
+		return "stone gathering"
 	case build_house:
 		return "house building"
 	case idle:
