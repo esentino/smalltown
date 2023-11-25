@@ -1,6 +1,6 @@
 module smalltown
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/gdamore/tcell/v2 v2.6.0
