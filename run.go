@@ -100,23 +100,27 @@ func game_progress() {
 			} else {
 				workers[i].progress += rand.Int() % 10
 				if current_worker.progress >= 100 {
-					switch workers[i].currentWork {
-					case gather_wood:
-						resources.wood += 1
-					case gather_stone:
-						resources.stone += 1
-					case build_house:
-						building.home++
-						workers = append(workers, worker{idle, 0})
-
-					}
-					workers[i].currentWork = idle
-					workers[i].progress = 0
+					doneWork(i)
 				}
 			}
 		}
 		app.Draw()
 	}
+}
+
+func doneWork(i int) {
+	switch workers[i].currentWork {
+	case gather_wood:
+		resources.wood += 1
+	case gather_stone:
+		resources.stone += 1
+	case build_house:
+		building.home++
+		workers = append(workers, worker{idle, 0})
+
+	}
+	workers[i].currentWork = idle
+	workers[i].progress = 0
 }
 
 func main() {
