@@ -19,5 +19,5 @@ func TestWorkTypeToName(t *testing.T) {
 			panic(fmt.Sprintf("name %s - expected %s", name, workTypes[key]))
 		}
 	}
-	nil
+
 }
