@@ -84,7 +84,16 @@ func queue_stone() {
 }
 
 func queue_build_house() {
-	workQueue = append(workQueue, build_house)
+	if resources.stone >= 10 && resources.wood >= 10 {
+		resources.stone -= 10
+		resources.wood -= 10
+		if resources.stone >= 0 && resources.wood >= 0 {
+			workQueue = append(workQueue, build_house)
+		} else {
+			resources.stone += 10
+			resources.wood += 10
+		}
+	}
 }
 
 func game_progress() {
@@ -131,6 +140,7 @@ func main() {
 	list.AddItem("get more wood", "queue job for wood gathering", '1', queue_wood)
 	list.AddItem("get mode stone", "queue job for stone gathering", '2', queue_stone)
 	list.AddItem("build house (10 wood, 10 stone) add extra worker", "queue job for house building", '3', queue_build_house)
+
 	workers = append(workers, worker{idle, 0})
 	workers = append(workers, worker{idle, 0})
 	workers = append(workers, worker{idle, 0})

@@ -21,3 +21,12 @@ func TestWorkTypeToName(t *testing.T) {
 	}
 
 }
+
+func TestQueueBuildHouse(t *testing.T) {
+	resources.stone = 10
+	resources.wood = 10
+	queue_build_house()
+	if len(workQueue) != 1 || workQueue[0] != build_house {
+		panic("failed")
+	}
+}
