@@ -30,3 +30,13 @@ func TestQueueBuildHouse(t *testing.T) {
 		panic("failed")
 	}
 }
+
+func TestQueueBuildHouseNotEnoughtResource(t *testing.T) {
+	workQueue = nil
+	resources.stone = 0
+	resources.wood = 0
+	queue_build_house()
+	if len(workQueue) == 1 {
+		panic("failed")
+	}
+}
