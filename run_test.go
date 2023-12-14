@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -48,12 +49,19 @@ func closeWindow() {
 }
 
 func TestMainFunction(t *testing.T) {
+	skipCI(t)
 	go closeWindow()
 	if app != nil {
 		panic("app is not nil")
 	}
 	main()
 
+}
+
+func skipCI(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping testing in CI environment")
+	}
 }
 
 func TestDoneWork(t *testing.T) {
