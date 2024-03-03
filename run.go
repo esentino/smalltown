@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -41,6 +43,13 @@ var workQueue []workType = []workType{}
 var workers []worker = []worker{{idle, 0}}
 var building = Building{4}
 var resources = Resources{0, 0}
+
+type SaveData struct {
+	workQueue []workType
+	workers   []worker
+	building  Building
+	resources Resources
+}
 
 func updateScreen(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
 	tview.PrintSimple(screen, "Hello World", x+1, y+1)
@@ -132,6 +141,19 @@ func doneWork(i int) {
 	workers[i].progress = 0
 }
 
+func save_and_close() {
+	save_data := SaveData{
+		workQueue: workQueue,
+		workers:   workers,
+		building:  building,
+		resources: resources,
+	}
+	f, _ := os.OpenFile("save.on", os.O_WRONLY|os.O_CREATE, 0600)
+	encoder := gob.NewEncoder(f)
+	encoder.Encode(&save_data)
+	os.Exit(0)
+}
+
 func main() {
 	app = tview.NewApplication()
 
@@ -140,6 +162,7 @@ func main() {
 	list.AddItem("get more wood", "queue job for wood gathering", '1', queue_wood)
 	list.AddItem("get mode stone", "queue job for stone gathering", '2', queue_stone)
 	list.AddItem("build house (10 wood, 10 stone) add extra worker", "queue job for house building", '3', queue_build_house)
+	list.AddItem("Save and close", "save game to save.on", 'q', save_and_close)
 
 	workers = append(workers, worker{idle, 0})
 	workers = append(workers, worker{idle, 0})
