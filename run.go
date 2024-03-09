@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -26,17 +27,17 @@ const (
 )
 
 type worker struct {
-	currentWork workType
-	progress    int
+	CurrentWork workType
+	Progress    int
 }
 
 type Resources struct {
-	wood  int
-	stone int
+	Wood  int
+	Stone int
 }
 
 type Building struct {
-	home int
+	Home int
 }
 
 var workQueue []workType = []workType{}
@@ -45,27 +46,27 @@ var building = Building{4}
 var resources = Resources{0, 0}
 
 type SaveData struct {
-	workQueue []workType
-	workers   []worker
-	building  Building
-	resources Resources
+	WorkQueue []workType
+	Workers   []worker
+	Building  Building
+	Resources Resources
 }
 
 func updateScreen(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
 	tview.PrintSimple(screen, "Hello World", x+1, y+1)
 	for index, worker := range workers {
-		tview.PrintSimple(screen, "Worker: "+work_type_to_name(worker.currentWork), x+1, y+index+1)
-		tview.PrintSimple(screen, "Progress: "+fmt.Sprint(worker.progress), x+1+width/2, y+index+1)
+		tview.PrintSimple(screen, "Worker: "+work_type_to_name(worker.CurrentWork), x+1, y+index+1)
+		tview.PrintSimple(screen, "Progress: "+fmt.Sprint(worker.Progress), x+1+width/2, y+index+1)
 	}
 
 	for index, work := range workQueue {
 		tview.PrintSimple(screen, "Work Queue: "+work_type_to_name(work), x+1, y+len(workers)+index+1)
 	}
 	tview.PrintSimple(screen, "-- Resources --", x+width/2, y+len(workers)+1)
-	tview.PrintSimple(screen, "Wood: "+fmt.Sprint(resources.wood), x+1+width/2, y+len(workers)+2)
-	tview.PrintSimple(screen, "Stone: "+fmt.Sprint(resources.stone), x+1+width/2, y+len(workers)+3)
+	tview.PrintSimple(screen, "Wood: "+fmt.Sprint(resources.Wood), x+1+width/2, y+len(workers)+2)
+	tview.PrintSimple(screen, "Stone: "+fmt.Sprint(resources.Stone), x+1+width/2, y+len(workers)+3)
 	tview.PrintSimple(screen, "-- Buildings --", x+width/2, y+len(workers)+4)
-	tview.PrintSimple(screen, "Homes: "+fmt.Sprint(building.home), x+1+width/2, y+len(workers)+5)
+	tview.PrintSimple(screen, "Homes: "+fmt.Sprint(building.Home), x+1+width/2, y+len(workers)+5)
 	return 0, 0, 0, 0
 }
 
@@ -93,14 +94,14 @@ func queue_stone() {
 }
 
 func queue_build_house() {
-	if resources.stone >= 10 && resources.wood >= 10 {
-		resources.stone -= 10
-		resources.wood -= 10
-		if resources.stone >= 0 && resources.wood >= 0 {
+	if resources.Stone >= 10 && resources.Wood >= 10 {
+		resources.Stone -= 10
+		resources.Wood -= 10
+		if resources.Stone >= 0 && resources.Wood >= 0 {
 			workQueue = append(workQueue, build_house)
 		} else {
-			resources.stone += 10
-			resources.wood += 10
+			resources.Stone += 10
+			resources.Wood += 10
 		}
 	}
 }
@@ -109,15 +110,15 @@ func game_progress() {
 	tick := time.NewTicker(1000 * time.Millisecond)
 	for range tick.C {
 		for i, current_worker := range workers {
-			if current_worker.currentWork == idle {
+			if current_worker.CurrentWork == idle {
 				if len(workQueue) > 0 {
-					workers[i].currentWork = workQueue[0]
+					workers[i].CurrentWork = workQueue[0]
 					workQueue = workQueue[1:]
-					workers[i].progress = 0
+					workers[i].Progress = 0
 				}
 			} else {
-				workers[i].progress += rand.Int() % 10
-				if current_worker.progress >= 100 {
+				workers[i].Progress += rand.Int() % 10
+				if current_worker.Progress >= 100 {
 					doneWork(i)
 				}
 			}
@@ -127,34 +128,65 @@ func game_progress() {
 }
 
 func doneWork(i int) {
-	switch workers[i].currentWork {
+	switch workers[i].CurrentWork {
 	case gather_wood:
-		resources.wood += 1
+		resources.Wood += 1
 	case gather_stone:
-		resources.stone += 1
+		resources.Stone += 1
 	case build_house:
-		building.home++
+		building.Home += 1
 		workers = append(workers, worker{idle, 0})
 
 	}
-	workers[i].currentWork = idle
-	workers[i].progress = 0
+	workers[i].CurrentWork = idle
+	workers[i].Progress = 0
 }
 
 func save_and_close() {
+
+	fmt.Println(workers[0].CurrentWork)
+
 	save_data := SaveData{
-		workQueue: workQueue,
-		workers:   workers,
-		building:  building,
-		resources: resources,
+		WorkQueue: workQueue,
+		Workers:   workers,
+		Building:  building,
+		Resources: resources,
 	}
-	f, _ := os.OpenFile("save.on", os.O_WRONLY|os.O_CREATE, 0600)
-	encoder := gob.NewEncoder(f)
-	encoder.Encode(&save_data)
+	fmt.Println(save_data.Workers)
+	json_data, err := json.Marshal(save_data)
+	fmt.Printf(string(json_data))
+	if err == nil {
+		fmt.Println(string(json_data))
+		f, _ := os.OpenFile("save.on", os.O_WRONLY|os.O_CREATE, 0600)
+		f.Write(json_data)
+		f.Close()
+	}
 	os.Exit(0)
 }
 
+func try_load_save() {
+	f, err := os.OpenFile("save.on", os.O_RDONLY, 0600)
+	if err == nil {
+		encoder := gob.NewDecoder(f)
+		var save_data SaveData
+		err = encoder.Decode(&save_data)
+		if err != nil {
+
+			fmt.Printf("unexpected division error: %s\n", err)
+			time.Sleep(8 * time.Second)
+			os.Exit(10)
+		}
+		workQueue = save_data.WorkQueue
+		workers = save_data.Workers
+		building = save_data.Building
+		resources = save_data.Resources
+	}
+	f.Close()
+}
+
 func main() {
+	//try_load_save()
+
 	app = tview.NewApplication()
 
 	box = tview.NewBox()
