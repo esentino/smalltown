@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -106,23 +105,27 @@ func queue_build_house() {
 	}
 }
 
+func do_worker_progres() {
+	for i, current_worker := range workers {
+		if current_worker.CurrentWork == idle {
+			if len(workQueue) > 0 {
+				workers[i].CurrentWork = workQueue[0]
+				workQueue = workQueue[1:]
+				workers[i].Progress = 0
+			}
+		} else {
+			workers[i].Progress += rand.Int() % 10
+			if current_worker.Progress >= 100 {
+				doneWork(i)
+			}
+		}
+	}
+}
+
 func game_progress() {
 	tick := time.NewTicker(1000 * time.Millisecond)
 	for range tick.C {
-		for i, current_worker := range workers {
-			if current_worker.CurrentWork == idle {
-				if len(workQueue) > 0 {
-					workers[i].CurrentWork = workQueue[0]
-					workQueue = workQueue[1:]
-					workers[i].Progress = 0
-				}
-			} else {
-				workers[i].Progress += rand.Int() % 10
-				if current_worker.Progress >= 100 {
-					doneWork(i)
-				}
-			}
-		}
+		do_worker_progres()
 		app.Draw()
 	}
 }
@@ -143,36 +146,31 @@ func doneWork(i int) {
 }
 
 func save_and_close() {
-
-	fmt.Println(workers[0].CurrentWork)
-
 	save_data := SaveData{
 		WorkQueue: workQueue,
 		Workers:   workers,
 		Building:  building,
 		Resources: resources,
 	}
-	fmt.Println(save_data.Workers)
-	json_data, err := json.Marshal(save_data)
-	fmt.Printf(string(json_data))
+	f, err := os.OpenFile("game.save", os.O_WRONLY|os.O_CREATE, 0600)
+
 	if err == nil {
-		fmt.Println(string(json_data))
-		f, _ := os.OpenFile("save.on", os.O_WRONLY|os.O_CREATE, 0600)
-		f.Write(json_data)
-		f.Close()
+		defer f.Close()
+		encoder := gob.NewEncoder(f)
+		encoder.Encode(save_data)
 	}
 	os.Exit(0)
 }
 
 func try_load_save() {
-	f, err := os.OpenFile("save.on", os.O_RDONLY, 0600)
+	f, err := os.OpenFile("game.save", os.O_RDONLY, 0600)
 	if err == nil {
+		defer f.Close()
 		encoder := gob.NewDecoder(f)
 		var save_data SaveData
 		err = encoder.Decode(&save_data)
 		if err != nil {
-
-			fmt.Printf("unexpected division error: %s\n", err)
+			fmt.Printf("unexpected error: %s\n", err)
 			time.Sleep(8 * time.Second)
 			os.Exit(10)
 		}
@@ -185,7 +183,7 @@ func try_load_save() {
 }
 
 func main() {
-	//try_load_save()
+	try_load_save()
 
 	app = tview.NewApplication()
 
@@ -194,7 +192,7 @@ func main() {
 	list.AddItem("get more wood", "queue job for wood gathering", '1', queue_wood)
 	list.AddItem("get mode stone", "queue job for stone gathering", '2', queue_stone)
 	list.AddItem("build house (10 wood, 10 stone) add extra worker", "queue job for house building", '3', queue_build_house)
-	list.AddItem("Save and close", "save game to save.on", 'q', save_and_close)
+	list.AddItem("Save and close", "save game to game.save", 'q', save_and_close)
 
 	workers = append(workers, worker{idle, 0})
 	workers = append(workers, worker{idle, 0})
